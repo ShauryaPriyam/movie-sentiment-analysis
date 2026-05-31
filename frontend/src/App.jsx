@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import MoviePage from "./pages/MoviePage";
+import "./index.css";
 
-function App() {
+export default function App() {
   return (
     <BrowserRouter>
       <Routes>
@@ -12,5 +13,3 @@ function App() {
     </BrowserRouter>
   );
 }
-
-export default App;

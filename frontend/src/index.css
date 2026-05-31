@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+:root {
+  --gold:     #e8a034;
+  --crimson:  #d4543a;
+  --positive: #22c55e;
+  --negative: #ef4444;
+  --neutral:  #94a3b8;
+}
+
+/* 
+* { box-sizing: border-box; margin: 0; padding: 0; } */
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: #0d0f14;
+  color: #f1f5f9;
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; max-width: 100%; }
+
+button, input, select, textarea {
+  font: inherit;
+}
+
+.font-display { font-family: 'Playfair Display', Georgia, serif; }
+
+/* Sentence-level sentiment underlines */
+.underline-positive {
+  background-image: linear-gradient(transparent 88%, #22c55e 88%);
+  background-repeat: no-repeat;
+}
+.underline-negative {
+  background-image: linear-gradient(transparent 88%, #ef4444 88%);
+  background-repeat: no-repeat;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #0d0f14; }
+::-webkit-scrollbar-thumb { background: #1e2333; border-radius: 3px; }
+
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeIn  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.animate-fadein { animation: fadeIn 0.25s ease forwards; }
