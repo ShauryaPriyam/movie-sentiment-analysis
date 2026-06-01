@@ -8,3 +8,5 @@ pydantic
 joblib
 requests
 python-dotenv
+asyncpg==0.29.0
+sqlalchemy[asyncio]==2.0.36

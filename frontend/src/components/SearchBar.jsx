@@ -3,9 +3,9 @@ import { useNavigate } from "react-router-dom";
 import API from "../api/api";
 
 export default function SearchBar() {
-  const [query, setQuery]         = useState("");
+  const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [open, setOpen]           = useState(false);
+  const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const debounce = useRef(null);
 
@@ -46,7 +46,7 @@ export default function SearchBar() {
       </div>
 
       {open && suggestions.length > 0 && (
-        <div className="absolute top-[calc(100%+6px)] left-0 right-0 bg-[#13161e] border border-white/8 rounded-xl overflow-hidden z-50 shadow-2xl">
+        <div className="absolute top-full mt-1 left-0 right-0 bg-[#13161e] border border-white/8 rounded-xl overflow-hidden z-50 shadow-2xl">
           {suggestions.map(m => (
             <div key={m.id} onMouseDown={() => goTo(m.id)}
               className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-white/5 border-b border-white/5 last:border-0 transition-colors">
@@ -56,7 +56,7 @@ export default function SearchBar() {
               <div>
                 <div className="text-sm text-white font-medium">{m.title}</div>
                 <div className="text-xs text-slate-500">
-                  {m.release_date?.slice(0,4)} · ★ {m.vote_average?.toFixed(1)}
+                  {m.release_date?.slice(0, 4)} · ★ {m.vote_average?.toFixed(1)}
                 </div>
               </div>
             </div>
