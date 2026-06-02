@@ -14,7 +14,10 @@ from sqlalchemy import (
     Float, DateTime, Index, func
 )
 from sqlalchemy.orm import Mapped, mapped_column
-from database import Base
+try:
+    from .database import Base
+except ImportError:
+    from database import Base
 
 
 def _now() -> datetime:

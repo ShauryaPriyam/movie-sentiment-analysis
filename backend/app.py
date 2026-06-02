@@ -10,15 +10,24 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, text
 
-from database import engine, Base, get_db
-from models import MovieVisit, UserReview, PredictLog
-
-from preprocessing import load_models, predict_sentiment, analyze_reviews
-from services.tmdb import (
-    search_movies, get_movie_details, get_movie_cast,
-    get_movie_reviews, get_recommendations,
-    get_similar_movies, get_trailers,
-)
+try:
+    from .database import engine, Base, get_db
+    from .models import MovieVisit, UserReview, PredictLog
+    from .preprocessing import load_models, predict_sentiment, analyze_reviews
+    from .services.tmdb import (
+        search_movies, get_movie_details, get_movie_cast,
+        get_movie_reviews, get_recommendations,
+        get_similar_movies, get_trailers,
+    )
+except ImportError:
+    from database import engine, Base, get_db
+    from models import MovieVisit, UserReview, PredictLog
+    from preprocessing import load_models, predict_sentiment, analyze_reviews
+    from services.tmdb import (
+        search_movies, get_movie_details, get_movie_cast,
+        get_movie_reviews, get_recommendations,
+        get_similar_movies, get_trailers,
+    )
 
 
 # ── Startup: create all tables ─────────────────────────────────────────────────
