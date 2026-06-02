@@ -20,7 +20,7 @@ function Avatar({ name }) {
   const initials = name.split(/[_\s]/).map(w => w[0]?.toUpperCase()).join("").slice(0, 2) || "?";
   return (
     <div className="w-10 h-10 rounded-full shrink-0 flex items-center justify-center text-[13px] font-semibold border"
-      style={{ background:`hsl(${hue},40%,20%)`, borderColor:`hsl(${hue},40%,30%)`, color:`hsl(${hue},70%,72%)` }}>
+      style={{ background: `hsl(${hue},40%,20%)`, borderColor: `hsl(${hue},40%,30%)`, color: `hsl(${hue},70%,72%)` }}>
       {initials}
     </div>
   );
@@ -31,13 +31,29 @@ function SentimentBadge({ prediction, confidence }) {
   const cls = s === "positive"
     ? "bg-green-500/10 text-green-400 border-green-500/25"
     : s === "negative"
-    ? "bg-red-500/10 text-red-400 border-red-500/25"
-    : "bg-slate-500/10 text-slate-400 border-slate-500/25";
+      ? "bg-red-500/10 text-red-400 border-red-500/25"
+      : "bg-slate-500/10 text-slate-400 border-slate-500/25";
   return (
     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${cls}`}>
       {prediction} · {confidence != null ? `${Math.round(confidence)}%` : "—"}
     </span>
   );
+}
+
+function getModelLabel(modelId) {
+  const labels = {
+    svm: "SVM",
+    log: "Logistic Regression",
+    svm_v2: "Optimized SVM",
+    log_v2: "Logistic Regression v2",
+    sgd_v2: "SGD Classifier v2",
+    rf_v2: "Random Forest v2",
+    bilstm_v3: "BiLSTM v3",
+    conv1d_v3: "Conv1D v3",
+    conv_bilstm_v3: "Conv BiLSTM v3",
+  };
+
+  return labels[modelId] || modelId || "Model";
 }
 
 function StarPicker({ value, onChange }) {
@@ -64,6 +80,8 @@ function StarPicker({ value, onChange }) {
 }
 
 function ReviewCard({ review }) {
+  const modelLabel = getModelLabel(review.model_used);
+
   return (
     <div className="bg-[#13161e] border border-white/8 rounded-xl p-4 animate-fadein">
       <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
@@ -72,9 +90,9 @@ function ReviewCard({ review }) {
           <div>
             <div className="text-sm font-semibold text-white">{review.username}</div>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="text-xs text-slate-500">{review.created_at?.slice(0,10)}</span>
+              <span className="text-xs text-slate-500">{review.created_at?.slice(0, 10)}</span>
               {review.rating != null && (
-                <span className="text-xs" style={{ color:"var(--gold)" }}>
+                <span className="text-xs" style={{ color: "var(--gold)" }}>
                   {"★".repeat(Math.round(review.rating / 2))} {review.rating}/10
                 </span>
               )}
@@ -83,7 +101,7 @@ function ReviewCard({ review }) {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold tracking-widest text-slate-600 uppercase border border-white/8 px-2 py-0.5 rounded">
-            {review.model_used === "log" ? "LR" : "SVM"}
+            {modelLabel}
           </span>
           <SentimentBadge prediction={review.prediction} confidence={review.confidence} />
         </div>
@@ -96,7 +114,7 @@ function ReviewCard({ review }) {
             const color = isPos ? "#22c55e" : "#ef4444";
             return (
               <span key={i} className="text-[11px] px-2 py-0.5 rounded-md font-semibold"
-                style={{ background:`${color}15`, color, border:`1px solid ${color}25` }}>
+                style={{ background: `${color}15`, color, border: `1px solid ${color}25` }}>
                 {kw}
               </span>
             );
@@ -109,20 +127,24 @@ function ReviewCard({ review }) {
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function UserReviewSection({ movieId, movieTitle, model, onModelChange }) {
-  const [reviews, setReviews]     = useState([]);
-  const [total,   setTotal]       = useState(0);
-  const [loading, setLoading]     = useState(true);
+export default function UserReviewSection({ movieId, movieTitle, model, models = [], onModelChange }) {
+  const [reviews, setReviews] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitted,  setSubmitted]  = useState(false);
-  const [error,   setError]       = useState(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
 
   // form state
-  const [username,    setUsername]    = useState(() => localStorage.getItem("cinescope_username") || "");
-  const [reviewText,  setReviewText]  = useState("");
-  const [rating,      setRating]      = useState(null);
-  const [lastResult,  setLastResult]  = useState(null);
+  const [username, setUsername] = useState(() => localStorage.getItem("cinescope_username") || "");
+  const [reviewText, setReviewText] = useState("");
+  const [rating, setRating] = useState(null);
+  const [lastResult, setLastResult] = useState(null);
+  const activeModel = models.find(entry => entry.id === model);
+  const selectableModels = models.length > 0
+    ? models
+    : [{ id: "svm_v2", name: "Optimized SVM", version: "2.0.0", description: "Default sentiment model", available: true }];
 
   // fetch existing user reviews
   const fetchReviews = useCallback(async () => {
@@ -145,9 +167,9 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
     setSubmitting(true); setSubmitError(null);
     try {
       const { data } = await API.post("/user-reviews", {
-        movie_id   : Number(movieId),
+        movie_id: Number(movieId),
         movie_title: movieTitle,
-        username   : username.trim(),
+        username: username.trim(),
         review_text: reviewText.trim(),
         rating,
         model,
@@ -158,15 +180,15 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
       localStorage.setItem("cinescope_username", username.trim());
       // prepend new review optimistically
       setReviews(prev => [{
-        id         : data.id,
-        username   : username.trim(),
+        id: data.id,
+        username: username.trim(),
         review_text: reviewText.trim(),
         rating,
-        prediction : data.prediction,
-        confidence : data.confidence,
-        keywords   : data.keywords,
-        model_used : model,
-        created_at : new Date().toISOString(),
+        prediction: data.prediction,
+        confidence: data.confidence,
+        keywords: data.keywords,
+        model_used: model,
+        created_at: new Date().toISOString(),
       }, ...prev]);
       setTotal(t => t + 1);
     } catch (e) {
@@ -187,7 +209,7 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
       <div className="bg-[#13161e] border border-white/8 rounded-2xl p-5">
         <h3 className="font-display text-lg font-bold text-white mb-1">Write a Review</h3>
         <p className="text-xs text-slate-500 mb-4">
-          Your review is analyzed instantly with {model === "log" ? "Logistic Regression" : "SVM"}.
+          Your review is analyzed instantly with {activeModel ? `${activeModel.name}${activeModel.version ? ` v${activeModel.version}` : ""}` : getModelLabel(model)}.
         </p>
 
         {/* Success flash */}
@@ -200,7 +222,7 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
             <span className="text-xl">{lastResult.prediction === "Positive" ? "✦" : "✧"}</span>
             <div>
               <div className="text-sm font-semibold text-white">
-                Review submitted — predicted <span style={{color: lastResult.prediction === "Positive" ? "#22c55e" : "#ef4444"}}>{lastResult.prediction}</span> · {Math.round(lastResult.confidence)}% confidence
+                Review submitted — predicted <span style={{ color: lastResult.prediction === "Positive" ? "#22c55e" : "#ef4444" }}>{lastResult.prediction}</span> · {Math.round(lastResult.confidence)}% confidence
               </div>
               {lastResult.keywords?.length > 0 && (
                 <div className="text-xs text-slate-500 mt-0.5">Key terms: {lastResult.keywords.join(", ")}</div>
@@ -213,15 +235,19 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
         {/* Model picker */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <span className="text-[10px] font-bold tracking-widest text-slate-600 uppercase">Analyze with:</span>
-          {[["svm","SVM"],["log","Logistic Regression"]].map(([val, label]) => (
-            <button key={val} onClick={() => onModelChange(val)}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer border font-sans transition-all ${
-                model === val
+          {selectableModels.map(entry => (
+            <button
+              key={entry.id}
+              onClick={() => entry.available !== false && onModelChange(entry.id)}
+              disabled={entry.available === false}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold border font-sans transition-all ${model === entry.id
                   ? "border-[--gold] text-[#0a0c10]"
-                  : "border-white/8 bg-transparent text-slate-400 hover:text-white"
-              }`}
-              style={model === val ? {background:"linear-gradient(135deg,var(--gold),#c4881c)"} : {}}>
-              {label}
+                  : entry.available === false
+                    ? "border-white/5 bg-transparent text-slate-600 cursor-not-allowed"
+                    : "border-white/8 bg-transparent text-slate-400 hover:text-white cursor-pointer"
+                }`}
+              style={model === entry.id ? { background: "linear-gradient(135deg,var(--gold),#c4881c)" } : {}}>
+              {entry.name}{entry.version ? ` v${entry.version}` : ""}{entry.available === false ? " (disabled)" : ""}
             </button>
           ))}
         </div>
@@ -265,11 +291,11 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
 
         <button onClick={handleSubmit} disabled={!canSubmit}
           className="w-full py-3 rounded-xl text-sm font-bold cursor-pointer border-none font-sans transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{background:"linear-gradient(135deg,var(--gold),#c4881c)",color:"#0a0c10"}}>
+          style={{ background: "linear-gradient(135deg,var(--gold),#c4881c)", color: "#0a0c10" }}>
           {submitting ? (
             <span className="flex items-center justify-center gap-2">
               <span className="w-4 h-4 rounded-full border-2 border-[#0a0c10]/30 border-t-[#0a0c10] inline-block"
-                style={{animation:"spin .7s linear infinite"}} />
+                style={{ animation: "spin .7s linear infinite" }} />
               Analyzing & saving…
             </span>
           ) : "Submit Review"}
@@ -295,7 +321,7 @@ export default function UserReviewSection({ movieId, movieTitle, model, onModelC
         {loading && (
           <div className="flex items-center gap-2 text-slate-500 text-sm py-4">
             <span className="w-4 h-4 rounded-full border-2 border-white/10 border-t-white/40 inline-block"
-              style={{animation:"spin .7s linear infinite"}} />
+              style={{ animation: "spin .7s linear infinite" }} />
             Loading community reviews…
           </div>
         )}

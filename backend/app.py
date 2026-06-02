@@ -39,15 +39,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-svm_model, log_model, vectorizer = load_models()
+MODEL_BUNDLES, MODEL_CATALOG = load_models()
 
-MODEL_CATALOG = [
-    {"id":"svm", "name":"SVM",                "description":"Support Vector Machine classifier",  "version":"1.0.0","default":True},
-    {"id":"log", "name":"Logistic Regression", "description":"Logistic Regression classifier",      "version":"1.0.0","default":False},
-]
+DEFAULT_MODEL_ID = next(
+    (
+        model["id"]
+        for model in MODEL_CATALOG
+        if model.get("default") and model.get("available")
+    ),
+    next((model["id"] for model in MODEL_CATALOG if model.get("available")), "svm_v2"),
+)
 
-def get_selected_model(model_name: str) -> Any:
-    return svm_model if model_name == "svm" else log_model
+
+def get_selected_model_bundle(model_name: str) -> dict[str, Any]:
+    bundle = MODEL_BUNDLES.get(model_name)
+    if not bundle:
+        raise HTTPException(status_code=400, detail=f"Unknown or unavailable model: {model_name}")
+    return bundle
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -56,7 +64,7 @@ def get_selected_model(model_name: str) -> Any:
 
 class ReviewRequest(BaseModel):
     review: str
-    model: str = "svm"
+    model: str = DEFAULT_MODEL_ID
 
 class VisitRequest(BaseModel):
     movie_id   : int
@@ -69,7 +77,7 @@ class UserReviewCreate(BaseModel):
     username   : str = Field(..., min_length=1, max_length=80)
     review_text: str = Field(..., min_length=10, max_length=5000)
     rating     : float | None = Field(None, ge=1, le=10)
-    model      : str = "svm"
+    model      : str = DEFAULT_MODEL_ID
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -90,8 +98,8 @@ def list_models():
 
 @app.post("/predict")
 async def predict(data: ReviewRequest, db: AsyncSession = Depends(get_db)):
-    model  = get_selected_model(data.model)
-    result = predict_sentiment(data.review, model, vectorizer)
+    bundle = get_selected_model_bundle(data.model)
+    result = predict_sentiment(data.review, bundle["model"], bundle["vectorizer"])
 
     # log every prediction for analytics
     db.add(PredictLog(
@@ -158,8 +166,8 @@ async def top_visited(limit: int = Query(10, le=50), db: AsyncSession = Depends(
 
 @app.post("/user-reviews", status_code=201)
 async def submit_user_review(data: UserReviewCreate, db: AsyncSession = Depends(get_db)):
-    model  = get_selected_model(data.model)
-    result = predict_sentiment(data.review_text, model, vectorizer)
+    bundle = get_selected_model_bundle(data.model)
+    result = predict_sentiment(data.review_text, bundle["model"], bundle["vectorizer"])
 
     review = UserReview(
         movie_id   =data.movie_id,
@@ -338,7 +346,7 @@ def movie_trailers(movie_id: int):
     ]
 
 @app.get("/movies/{movie_id}/analysis")
-def movie_analysis(movie_id: int, model: str = "svm"):
-    selected_model = get_selected_model(model)
+def movie_analysis(movie_id: int, model: str = DEFAULT_MODEL_ID):
+    bundle = get_selected_model_bundle(model)
     reviews        = get_movie_reviews(movie_id)
-    return analyze_reviews(reviews, selected_model, vectorizer)
+    return analyze_reviews(reviews, bundle["model"], bundle["vectorizer"])

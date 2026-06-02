@@ -2,6 +2,7 @@ import re
 import joblib
 import numpy as np
 from pathlib import Path
+from typing import Any
 
 import nltk
 nltk.download("stopwords", quiet=True)
@@ -27,6 +28,69 @@ NEGATIVE_KEYWORDS = {
 pattern = re.compile(
     r"\b(" + r"|".join(stopwords_list) + r")\b\s*"
 )
+
+MODEL_SPECS = [
+    {
+        "id": "svm",
+        "name": "SVM",
+        "description": "Support Vector Machine classifier",
+        "version": "1.0.0",
+        "default": False,
+        "kind": "sklearn",
+        "model_file": "best_svm_sentiment.pkl",
+        "vectorizer_file": "tfidf_vectorizer_movie.pkl",
+    },
+    {
+        "id": "log",
+        "name": "Logistic Regression",
+        "description": "Logistic Regression classifier",
+        "version": "1.0.0",
+        "default": False,
+        "kind": "sklearn",
+        "model_file": "log_model_sentiment.pkl",
+        "vectorizer_file": "tfidf_vectorizer_movie.pkl",
+    },
+    {
+        "id": "svm_v2",
+        "name": "Optimized SVM",
+        "description": "Optimized SVM trained with the v2 negation-aware TF-IDF features",
+        "version": "2.0.0",
+        "default": True,
+        "kind": "sklearn",
+        "model_file": "optimized_svm_sentiment_v2.pkl",
+        "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
+    },
+    {
+        "id": "log_v2",
+        "name": "Logistic Regression v2",
+        "description": "v2 logistic regression trained with the negation-aware TF-IDF vectorizer",
+        "version": "2.0.0",
+        "default": False,
+        "kind": "sklearn",
+        "model_file": "logistic_regression_sentiment_v2.pkl",
+        "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
+    },
+    {
+        "id": "sgd_v2",
+        "name": "SGD Classifier v2",
+        "description": "v2 linear classifier trained with the negation-aware TF-IDF vectorizer",
+        "version": "2.0.0",
+        "default": False,
+        "kind": "sklearn",
+        "model_file": "sgd_sentiment_v2.pkl",
+        "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
+    },
+    {
+        "id": "rf_v2",
+        "name": "Random Forest v2",
+        "description": "v2 random forest trained with the negation-aware TF-IDF vectorizer",
+        "version": "2.0.0",
+        "default": False,
+        "kind": "sklearn",
+        "model_file": "random_forest_sentiment_v2.pkl",
+        "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
+    },
+]
 
 def remove_tags(text):
     return TAG_RE.sub("", text)
@@ -68,19 +132,31 @@ def load_models():
 
     MODELS_DIR = BASE_DIR / "models"
 
-    svm_model = joblib.load(
-        MODELS_DIR / "best_svm_sentiment.pkl"
-    )
+    model_bundles: dict[str, dict[str, Any]] = {}
+    catalog: list[dict[str, Any]] = []
 
-    log_model = joblib.load(
-        MODELS_DIR / "log_model_sentiment.pkl"
-    )
+    for spec in MODEL_SPECS:
+        entry = {
+            "id": spec["id"],
+            "name": spec["name"],
+            "description": spec["description"],
+            "version": spec["version"],
+            "default": spec["default"],
+        }
 
-    vectorizer = joblib.load(
-        MODELS_DIR / "tfidf_vectorizer_movie.pkl"
-    )
+        try:
+            model_bundles[spec["id"]] = {
+                "model": joblib.load(MODELS_DIR / spec["model_file"]),
+                "vectorizer": joblib.load(MODELS_DIR / spec["vectorizer_file"]),
+            }
+            entry["available"] = True
+        except Exception as exc:
+            entry["available"] = False
+            entry["unavailable_reason"] = str(exc)
 
-    return svm_model, log_model, vectorizer
+        catalog.append(entry)
+
+    return model_bundles, catalog
 
 
 def predict_sentiment(text, model, vectorizer):

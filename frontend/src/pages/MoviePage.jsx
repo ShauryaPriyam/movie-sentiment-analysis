@@ -56,7 +56,7 @@ export default function MoviePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [models, setModels] = useState([]);
-  const [selectedModel, setSelectedModel] = useState("svm");
+  const [selectedModel, setSelectedModel] = useState("");
   const currentModel = models.find(model => model.id === selectedModel);
 
   const applySettledResponse = (result, onSuccess, fallback) => {
@@ -80,9 +80,14 @@ export default function MoviePage() {
       API.get(`/movies/${id}/trailers`),
     ]).then(([modelsR, movieR, castR, recsR, similarR, trailersR]) => {
       applySettledResponse(modelsR, data => {
-        const modelList = data || [];
+        const modelList = (data || []).filter(Boolean);
         setModels(modelList);
-        setSelectedModel(modelList.find(model => model.default)?.id || modelList[0]?.id || "svm");
+        setSelectedModel(
+          modelList.find(model => model.default && model.available)?.id ||
+          modelList.find(model => model.available)?.id ||
+          modelList[0]?.id ||
+          ""
+        );
       }, []);
 
       if (movieR.status !== "fulfilled") {
@@ -112,7 +117,10 @@ export default function MoviePage() {
   }, [id, movie?.title]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !selectedModel) return;
+
+    const selectedEntry = models.find(model => model.id === selectedModel);
+    if (selectedEntry && selectedEntry.available === false) return;
 
     setLoading(true);
 
@@ -132,7 +140,7 @@ export default function MoviePage() {
         setReviews([]);
         setLoading(false);
       });
-  }, [id, selectedModel]);
+  }, [id, selectedModel, models]);
 
   const toggleFav = () => setFavs(f => f.includes(+id) ? f.filter(x => x !== +id) : [...f, +id]);
   const toggleWl = () => setWl(w => w.includes(+id) ? w.filter(x => x !== +id) : [...w, +id]);
@@ -187,8 +195,13 @@ export default function MoviePage() {
                   className="bg-transparent text-sm text-shadow-black outline-none"
                 >
                   {models.map(model => (
-                    <option key={model.id} value={model.id} className="bg-[#13161e] text-white">
-                      {model.name}{model.version ? ` v${model.version}` : ""}
+                    <option
+                      key={model.id}
+                      value={model.id}
+                      disabled={!model.available}
+                      className="bg-[#13161e] text-white"
+                    >
+                      {model.name}{model.version ? ` v${model.version}` : ""}{!model.available ? " (unavailable)" : ""}
                     </option>
                   ))}
                 </select>
@@ -205,7 +218,7 @@ export default function MoviePage() {
                 {tab === "overview" && <><CastSection cast={cast} /><TrailerSection trailers={trailers} /><SimilarMovies similar={similar} /></>}
                 {tab === "reviews" && <ReviewsSection reviews={reviews} />}
                 {tab === "sentiment" && <SentimentSection reviews={reviews} />}
-                {tab === "community" && <UserReviewSection movieId={id} movieTitle={movie.title} model={selectedModel} />}
+                {tab === "community" && <UserReviewSection movieId={id} movieTitle={movie.title} model={selectedModel} models={models} />}
                 {tab === "recommendations" && <RecommendationSection recommendations={recs} />}
               </div>
             </div>
