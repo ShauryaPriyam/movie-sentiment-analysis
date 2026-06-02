@@ -47,7 +47,6 @@ function getModelLabel(modelId) {
     svm_v2: "Optimized SVM",
     log_v2: "Logistic Regression v2",
     sgd_v2: "SGD Classifier v2",
-    rf_v2: "Random Forest v2",
     bilstm_v3: "BiLSTM v3",
     conv1d_v3: "Conv1D v3",
     conv_bilstm_v3: "Conv BiLSTM v3",
@@ -241,10 +240,10 @@ export default function UserReviewSection({ movieId, movieTitle, model, models =
               onClick={() => entry.available !== false && onModelChange(entry.id)}
               disabled={entry.available === false}
               className={`px-3 py-1 rounded-lg text-xs font-semibold border font-sans transition-all ${model === entry.id
-                  ? "border-[--gold] text-[#0a0c10]"
-                  : entry.available === false
-                    ? "border-white/5 bg-transparent text-slate-600 cursor-not-allowed"
-                    : "border-white/8 bg-transparent text-slate-400 hover:text-white cursor-pointer"
+                ? "border-[--gold] text-[#0a0c10]"
+                : entry.available === false
+                  ? "border-white/5 bg-transparent text-slate-600 cursor-not-allowed"
+                  : "border-white/8 bg-transparent text-slate-400 hover:text-white cursor-pointer"
                 }`}
               style={model === entry.id ? { background: "linear-gradient(135deg,var(--gold),#c4881c)" } : {}}>
               {entry.name}{entry.version ? ` v${entry.version}` : ""}{entry.available === false ? " (disabled)" : ""}

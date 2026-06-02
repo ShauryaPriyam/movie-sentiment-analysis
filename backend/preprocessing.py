@@ -80,16 +80,6 @@ MODEL_SPECS = [
         "model_file": "sgd_sentiment_v2.pkl",
         "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
     },
-    {
-        "id": "rf_v2",
-        "name": "Random Forest v2",
-        "description": "v2 random forest trained with the negation-aware TF-IDF vectorizer",
-        "version": "2.0.0",
-        "default": False,
-        "kind": "sklearn",
-        "model_file": "random_forest_sentiment_v2.pkl",
-        "vectorizer_file": "tfidf_vectorizer_negation_v2.pkl",
-    },
 ]
 
 def remove_tags(text):
