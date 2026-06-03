@@ -90,9 +90,32 @@ export default function Home() {
   const [trending, setTrending] = useState([]);
 
   useEffect(() => {
-    API.get("/movies/search?q=2023")
-      .then(({ data }) => setTrending(data.slice(0, 12)))
-      .catch(() => {});
+    const queries = [
+      "Avengers",
+      "Batman",
+      "Dune",
+      "Interstellar",
+      "Spider-Man",
+      "Star Wars",
+      "The Matrix",
+      "Inception",
+    ];
+
+    Promise.all(
+      queries.map((q) => API.get(`/movies/search?q=${q}`))
+    )
+      .then((responses) => {
+        const movies = responses
+          .flatMap((res) => res.data.slice(0,3))
+          .filter(
+            (movie, index, self) =>
+              index === self.findIndex((m) => m.id === movie.id)
+          ) // remove duplicates
+          .slice(0, 24);
+
+        setTrending(movies);
+      })
+      .catch(console.error);
   }, []);
 
   return (
