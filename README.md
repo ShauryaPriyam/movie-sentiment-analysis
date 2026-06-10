@@ -8,6 +8,10 @@ Built using React, FastAPI, Supabase, and multiple sentiment classification mode
 
 ---
 
+### 🏠 Home Page
+
+![Home Page](images/homepage.png)
+
 ## 🚀 Key Features
 
 ### 🎥 Movie Discovery
@@ -230,7 +234,7 @@ Dataset Characteristics:
 
 ### 👥 Community Sentiment
 
-![Community](images/sentiment.png)
+![Community](images/Sentiment.png)
 
 ### 📊 Analytics Dashboard
 
