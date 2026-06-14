@@ -97,7 +97,7 @@ class UserReviewCreate(BaseModel):
 def home():
     return {"message": "Movie Sentiment Analysis API Running"}
 
-@app.get("/health",methods=["GET", "HEAD"])
+@app.api_route("/health",methods=["GET", "HEAD"])
 def health():
     return {"status": "healthy"}
 
